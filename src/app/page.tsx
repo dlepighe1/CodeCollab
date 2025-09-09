@@ -1,25 +1,13 @@
 'use client';
 
-import {
-  useEffect,
-  useMemo,
-  useState,
-  useRef,
-  useLayoutEffect,
-  FormEvent,
-} from 'react';
+import { useEffect, useMemo, useState, useRef, useLayoutEffect, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { gsap } from 'gsap';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Code, Users, PenTool, Zap } from 'lucide-react';
 
 type SessionType = 'join' | null; // one-flow: only track 'join'
@@ -74,9 +62,10 @@ export default function Page() {
   useEffect(() => setIsMounted(true), []);
 
   const [sessionType, setSessionType] = useState<SessionType>(null);
-  const [formData, setFormData] = useState<{ nickname: string; sessionCode: string }>({
+  const [formData, setFormData] = useState<{ nickname: string; sessionCode: string; language: string }>({
     nickname: '',
     sessionCode: '',
+    language: 'javascript', // Default to 'javascript'
   });
   const [err, setErr] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
@@ -153,7 +142,7 @@ export default function Page() {
 
     if (!ok) return setErr('That room is not available (not found or full).');
 
-    router.push(`/room/${rid}?name=${encodeURIComponent(name)}`);
+    router.push(`/room/${rid}?name=${encodeURIComponent(name)}&lang=${encodeURIComponent(formData.language)}`);
   }
 
   // CREATE click (validate before nav)
@@ -167,7 +156,7 @@ export default function Page() {
     setCreating(false);
 
     if (!id) return setErr('Could not create a new room. Please try again.');
-    router.push(`/session/${id}?name=${encodeURIComponent(name)}`);
+    router.push(`/session/${id}?name=${encodeURIComponent(name)}&lang=${encodeURIComponent(formData.language)}`);
   };
 
   return (
@@ -237,17 +226,17 @@ export default function Page() {
         <CardContent className="space-y-6 relative z-10">
           {/* Features (no Themes) */}
           <div className="grid grid-cols-3 gap-3 text-center">
-            <div className="p-3 rounded-lg bg-blue-500/20 backdrop-blur-sm border border-blue-500/30 shadow-lg shadow-blue-500/10">
+            <div className="p-3 rounded-lg bg-blue-500/20 backdrop-blur-sm border border-blue-500/30 shadow-lg shadow-blue-500/10 hover:scale-105 transition-all duration-300">
               <Users className="w-5 h-5 text-blue-400 mx-auto mb-2" />
               <p className="text-xs font-medium text-blue-300">Collaborate</p>
               <p className="text-xs text-blue-400/70">Up to 6 users</p>
             </div>
-            <div className="p-3 rounded-lg bg-green-500/20 backdrop-blur-sm border border-green-500/30 shadow-lg shadow-green-500/10">
+            <div className="p-3 rounded-lg bg-green-500/20 backdrop-blur-sm border border-green-500/30 shadow-lg shadow-green-500/10 hover:scale-105 transition-all duration-300">
               <Zap className="w-5 h-5 text-green-400 mx-auto mb-2" />
               <p className="text-xs font-medium text-green-300">Live Coding</p>
               <p className="text-xs text-green-400/70">Real-time sync</p>
             </div>
-            <div className="p-3 rounded-lg bg-purple-500/20 backdrop-blur-sm border border-purple-500/30 shadow-lg shadow-purple-500/10">
+            <div className="p-3 rounded-lg bg-purple-500/20 backdrop-blur-sm border border-purple-500/30 shadow-lg shadow-purple-500/10 hover:scale-105 transition-all duration-300">
               <PenTool className="w-5 h-5 text-purple-400 mx-auto mb-2" />
               <p className="text-xs font-medium text-purple-300">Whiteboard</p>
               <p className="text-xs text-purple-400/70">Draw together</p>
@@ -270,11 +259,31 @@ export default function Page() {
               />
             </div>
 
+            {/* Preferred Language Dropdown */}
+            <div className="space-y-2">
+              <Label htmlFor="language" className="text-sm font-medium text-slate-200">
+                Preferred Programming Language
+              </Label>
+              <Select
+                value={formData.language}
+                onValueChange={(value) => setFormData((prev) => ({ ...prev, language: value }))}>
+                <SelectTrigger className="w-full bg-slate-800/60 backdrop-blur-sm border border-purple-500/40 text-white focus:border-purple-400 focus:ring-purple-400/50 shadow-lg shadow-purple-500/10 rounded-md px-3 py-2 text-sm">
+                  {/* FIX: Removed the placeholder prop. The component will now display the selected value automatically. */}
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-slate-800 border-slate-600">
+                  <SelectItem value="javascript">JavaScript</SelectItem>
+                  <SelectItem value="python">Python</SelectItem>
+                  <SelectItem value="java">Java</SelectItem>
+                  <SelectItem value="cpp">C++</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
             {!sessionType && (
               <div className="space-y-3">
                 <Label className="text-sm font-medium text-slate-200">Choose an option</Label>
                 <div className="grid grid-cols-2 gap-3">
-                  {/* ONE-FLOW: Create navigates after server validates/creates */}
                   <Button
                     type="button"
                     variant="outline"
@@ -286,7 +295,6 @@ export default function Page() {
                     {creating ? 'Creating…' : 'Create Session'}
                   </Button>
 
-                  {/* Join reveals extra field + animated height */}
                   <Button
                     type="button"
                     variant="outline"
@@ -346,7 +354,7 @@ export default function Page() {
             )}
           </form>
 
-          {err && <p className="text-sm text-red-400">{err}</p>}
+          {err && <p className="flex justify-center text-sm text-red-400">{err}</p>}
 
           <div className="text-center pt-2">
             <p className="text-xs text-slate-400">

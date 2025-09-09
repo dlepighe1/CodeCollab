@@ -1,4 +1,3 @@
-// src/app/api/exec/route.ts
 import { NextResponse } from 'next/server';
 
 const PISTON_URL = process.env.PISTON_URL || 'https://emkc.org/api/v2/piston/execute';
