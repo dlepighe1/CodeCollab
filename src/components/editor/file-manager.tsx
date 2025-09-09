@@ -1,7 +1,10 @@
 'use client';
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
+// Removed individual icon imports
+import { FaFile } from 'react-icons/fa';
+import { LANGUAGES } from "@/components/lib/constants";
 
 interface FileItem {
   id: string;
@@ -15,6 +18,11 @@ interface FileManagerProps {
   activeFileId: string;
   onFileSelect: (id: string) => void;
   onFilesChange: (files: FileItem[]) => void;
+  onLanguageChange: (lang: string) => void;
+  onFileDelete: (id: string) => void;
+  onCreateFile: () => void;
+  newlyCreatedFileId: string | null;
+  setNewlyCreatedFileId: (id: string | null) => void;
 }
 
 const FileManager: React.FC<FileManagerProps> = ({
@@ -22,71 +30,61 @@ const FileManager: React.FC<FileManagerProps> = ({
   activeFileId,
   onFileSelect,
   onFilesChange,
+  onFileDelete,
+  onCreateFile,
+  newlyCreatedFileId,
+  setNewlyCreatedFileId
 }) => {
   const [renamingFileId, setRenamingFileId] = useState<string | null>(null);
   const [tempName, setTempName] = useState('');
   const [openDropdown, setOpenDropdown] = useState<{ id: string; x: number; y: number } | null>(null);
 
-  const handleCreateFile = () => {
-    let counter = 1;
-    let name = "NewFile.js";
-    while (files.some(f => f.name === name)) {
-      name = `NewFile(${counter}).js`;
-      counter++;
+  useEffect(() => {
+    if (newlyCreatedFileId) {
+      setRenamingFileId(newlyCreatedFileId);
+      setTempName(files.find(f => f.id === newlyCreatedFileId)?.name || '');
+      setNewlyCreatedFileId(null);
     }
+  }, [newlyCreatedFileId, files, setNewlyCreatedFileId]);
 
-    const id = Date.now().toString();
-    const newFile: FileItem = {
-      id,
-      name,
-      content: '',
-      language: 'javascript',
-    };
-
-    const updatedFiles = [...files, newFile].sort((a, b) =>
-      a.name.localeCompare(b.name)
-    );
-    onFilesChange(updatedFiles);
-    onFileSelect(id);
-
-    setRenamingFileId(id);
-    setTempName(name);
+  const handleCreateFile = () => {
+    onCreateFile();
   };
 
   const handleDeleteFile = (id: string) => {
-    if (files.length === 1) return;
-    const updatedFiles = files.filter(f => f.id !== id);
-    onFilesChange(updatedFiles);
-    if (activeFileId === id && updatedFiles.length > 0) {
-      onFileSelect(updatedFiles[updatedFiles.length - 1].id); // Select the most recent file
-    }
-    setOpenDropdown(null);
+    onFileDelete(id);
   };
 
   const handleApplyRename = (id: string) => {
-    const updatedFiles = files
-      .map(f => (f.id === id ? { ...f, name: tempName } : f))
-      .sort((a, b) => a.name.localeCompare(b.name));
+    const updatedFiles = files.map(f => (f.id === id ? { ...f, name: tempName } : f)).sort((a, b) => a.name.localeCompare(b.name));
     onFilesChange(updatedFiles);
     setRenamingFileId(null);
     setOpenDropdown(null);
   };
 
   const handleCancelRename = () => {
-    if (renamingFileId && !files.some(f => f.id === renamingFileId && f.name !== tempName)) {
-      const updatedFiles = files.filter(f => f.id !== renamingFileId);
-      onFilesChange(updatedFiles);
-      if (updatedFiles.length > 0) {
-        onFileSelect(updatedFiles[updatedFiles.length - 1].id); // Select most recent file after cancel
-      }
-    }
     setRenamingFileId(null);
     setOpenDropdown(null);
   };
 
+  // Dynamically get the file icon from the LANGUAGES constant
+  const getFileIcon = (name: string) => {
+    const extension = name.split('.').pop()?.toLowerCase();
+    const language = Object.values(LANGUAGES).find(lang => lang.extension === extension);
+    const IconComponent = language ? language.icon : FaFile;
+    const color = language ? (
+        language.name === 'JavaScript' ? 'text-yellow-500' :
+        language.name === 'Python' ? 'text-blue-500' :
+        language.name === 'Java' ? 'text-red-500' :
+        language.name === 'C++' ? 'text-blue-300' :
+        'text-gray-500'
+    ) : 'text-gray-500';
+
+    return <IconComponent className={`w-4 h-4 ${color}`} />;
+  };
+
   return (
     <div className="flex flex-col h-full">
-      {/* Header */}
       <div className="flex items-center justify-between p-2 border-b border-slate-800">
         <span className="text-slate-300 font-semibold text-sm">File Explorer</span>
         <button
@@ -97,22 +95,12 @@ const FileManager: React.FC<FileManagerProps> = ({
         </button>
       </div>
 
-      {/* File List */}
       <div className="flex-1 overflow-y-auto p-2 space-y-1">
         {files.map(file => (
           <div
             key={file.id}
-            className={`flex items-center justify-between p-1 rounded cursor-pointer group ${
-              file.id === activeFileId
-                ? 'bg-slate-700 text-white'
-                : 'text-slate-300 hover:bg-slate-800'
-            }`}
-            onClick={() => {
-              // Ensure the file is clickable if not renaming or dropdown not open
-              if (!renamingFileId && openDropdown?.id !== file.id) {
-                onFileSelect(file.id);
-              }
-            }}
+            className={`flex items-center justify-between p-1 rounded cursor-pointer group ${file.id === activeFileId ? 'bg-slate-700 text-white' : 'text-slate-300 hover:bg-slate-800'}`}
+            onClick={() => onFileSelect(file.id)}
           >
             {renamingFileId === file.id ? (
               <div className="flex items-center space-x-1 w-full">
@@ -147,18 +135,17 @@ const FileManager: React.FC<FileManagerProps> = ({
               </div>
             ) : (
               <div className="flex items-center justify-between w-full">
-                <span className="truncate">{file.name}</span>
-
-                {/* 3-dot button */}
+                <div className="flex items-center space-x-2">
+                  {getFileIcon(file.name)}
+                  <span className="truncate">{file.name}</span>
+                </div>
                 <button
                   className="opacity-0 group-hover:opacity-100 hover:opacity-100 px-1 cursor-pointer"
                   onClick={(e) => {
                     e.stopPropagation();
                     const rect = (e.target as HTMLButtonElement).getBoundingClientRect();
                     setOpenDropdown(
-                      openDropdown?.id === file.id
-                        ? null
-                        : { id: file.id, x: rect.right + 4, y: rect.top }
+                      openDropdown?.id === file.id ? null : { id: file.id, x: rect.right + 4, y: rect.top }
                     );
                   }}
                 >
@@ -170,7 +157,6 @@ const FileManager: React.FC<FileManagerProps> = ({
         ))}
       </div>
 
-      {/* Dropdown Portal */}
       {openDropdown &&
         createPortal(
           <div

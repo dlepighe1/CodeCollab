@@ -1,4 +1,5 @@
 import { Users, Plus, Crown } from "lucide-react";
+import { AiOutlineUserAdd } from 'react-icons/ai'
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -7,7 +8,6 @@ import { Badge } from "@/components/ui/badge";
 interface User {
   id: string;
   nickname: string;
-  email: string;
   color: string;
 }
 
@@ -18,7 +18,7 @@ interface ParticipantListProps {
 }
 
 const ParticipantList = ({ users, currentUserId, onInviteClick }: ParticipantListProps) => {
-  const otherUsers = users.filter(user => user.id !== currentUserId);
+  const participants = users.filter(user => user.id !== currentUserId);
   const currentUser = users.find(user => user.id === currentUserId);
   const isAdmin = currentUserId === '1'; // First user is admin
 
@@ -27,9 +27,9 @@ const ParticipantList = ({ users, currentUserId, onInviteClick }: ParticipantLis
       {/* Participant Avatars */}
       <Dialog>
         <DialogTrigger asChild>
-          <Button variant="ghost" size="sm" className="flex items-center space-x-1 text-slate-300 hover:text-white hover:bg-slate-800/60 backdrop-blur-sm">
+          <Button variant="ghost" size="sm" className="flex items-center space-x-1 text-slate-300 hover:text-white hover:bg-slate-800/60 backdrop-blur-sm rounded-full border-2">
             <div className="flex -space-x-2">
-              {users.slice(0, 3).map((user) => (
+              {users.slice(1, users.length).map((user) => (
                 <Avatar key={user.id} className="w-6 h-6 border-2 border-slate-700">
                   <AvatarFallback 
                     className="text-xs text-white"
@@ -39,14 +39,7 @@ const ParticipantList = ({ users, currentUserId, onInviteClick }: ParticipantLis
                   </AvatarFallback>
                 </Avatar>
               ))}
-              {users.length > 3 && (
-                <div className="w-6 h-6 rounded-full bg-slate-700 border-2 border-slate-700 flex items-center justify-center">
-                  <span className="text-xs text-slate-300">+{users.length - 3}</span>
-                </div>
-              )}
             </div>
-            <Users className="w-4 h-4 ml-2" />
-            <span className="text-sm">{users.length}</span>
           </Button>
         </DialogTrigger>
         
@@ -54,12 +47,12 @@ const ParticipantList = ({ users, currentUserId, onInviteClick }: ParticipantLis
           <DialogHeader>
             <DialogTitle className="flex items-center">
               <Users className="w-5 h-5 mr-2" />
-              Participants ({otherUsers.length + 1})
+              Participants
             </DialogTitle>
           </DialogHeader>
           
           <div className="space-y-3 max-h-64 overflow-y-auto">
-            {/* Current User */}
+            {/* Admin/Current Users */}
             {currentUser && (
               <div className="flex items-center space-x-3 p-3 rounded-lg bg-slate-800/50">
                 <Avatar className="w-8 h-8">
@@ -76,13 +69,12 @@ const ParticipantList = ({ users, currentUserId, onInviteClick }: ParticipantLis
                     <Badge variant="secondary" className="text-xs">You</Badge>
                     {isAdmin && <Crown className="w-4 h-4 text-yellow-500" />}
                   </div>
-                  <p className="text-slate-400 text-sm">{currentUser.email}</p>
                 </div>
               </div>
             )}
             
-            {/* Other Users */}
-            {otherUsers.map((user) => (
+            {/* Participants */}
+            {participants.map((user) => (
               <div key={user.id} className="flex items-center space-x-3 p-3 rounded-lg hover:bg-slate-800/30">
                 <Avatar className="w-8 h-8">
                   <AvatarFallback 
@@ -97,7 +89,6 @@ const ParticipantList = ({ users, currentUserId, onInviteClick }: ParticipantLis
                     <p className="text-white font-medium">{user.nickname}</p>
                     {user.id === '1' && <Crown className="w-4 h-4 text-yellow-500" />}
                   </div>
-                  <p className="text-slate-400 text-sm">{user.email}</p>
                 </div>
               </div>
             ))}
@@ -110,9 +101,9 @@ const ParticipantList = ({ users, currentUserId, onInviteClick }: ParticipantLis
         variant="ghost"
         size="sm"
         onClick={onInviteClick}
-        className="text-slate-300 hover:text-white hover:bg-slate-800/60 backdrop-blur-sm"
+        className="text-slate-300 hover:text-white hover:bg-slate-800/60 backdrop-blur-sm rounded-full border-2"
       >
-        <Plus className="w-4 h-4" />
+        <AiOutlineUserAdd className="w-4 h-4" />
       </Button>
     </div>
   );

@@ -1,6 +1,13 @@
 'use client';
 
-import { useEffect, useMemo, useState, useRef, useLayoutEffect, FormEvent } from 'react';
+import {
+  useEffect,
+  useMemo,
+  useState,
+  useRef,
+  useLayoutEffect,
+  FormEvent,
+} from 'react';
 import { useRouter } from 'next/navigation';
 import { gsap } from 'gsap';
 import { Button } from '@/components/ui/button';
@@ -268,10 +275,9 @@ export default function Page() {
                 value={formData.language}
                 onValueChange={(value) => setFormData((prev) => ({ ...prev, language: value }))}>
                 <SelectTrigger className="w-full bg-slate-800/60 backdrop-blur-sm border border-purple-500/40 text-white focus:border-purple-400 focus:ring-purple-400/50 shadow-lg shadow-purple-500/10 rounded-md px-3 py-2 text-sm">
-                  {/* FIX: Removed the placeholder prop. The component will now display the selected value automatically. */}
                   <SelectValue />
                 </SelectTrigger>
-                <SelectContent className="bg-slate-800 border-slate-600">
+                <SelectContent className="bg-slate-400 border-slate-600">
                   <SelectItem value="javascript">JavaScript</SelectItem>
                   <SelectItem value="python">Python</SelectItem>
                   <SelectItem value="java">Java</SelectItem>
