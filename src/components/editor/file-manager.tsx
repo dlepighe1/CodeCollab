@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
-// Removed individual icon imports
 import { FaFile } from 'react-icons/fa';
 import { LANGUAGES } from "@/components/lib/constants";
 
@@ -15,25 +14,28 @@ interface FileItem {
 
 interface FileManagerProps {
   files: FileItem[];
-  activeFileId: string;
+  focusedFileId: string | null;
   onFileSelect: (id: string) => void;
   onFilesChange: (files: FileItem[]) => void;
-  onLanguageChange: (lang: string) => void;
   onFileDelete: (id: string) => void;
   onCreateFile: () => void;
   newlyCreatedFileId: string | null;
   setNewlyCreatedFileId: (id: string | null) => void;
+  onOpenFileToSide: (id: string) => void;
+  isSplitView: boolean;
 }
 
 const FileManager: React.FC<FileManagerProps> = ({
   files,
-  activeFileId,
+  focusedFileId,
   onFileSelect,
   onFilesChange,
   onFileDelete,
   onCreateFile,
   newlyCreatedFileId,
-  setNewlyCreatedFileId
+  setNewlyCreatedFileId,
+  onOpenFileToSide,
+  isSplitView
 }) => {
   const [renamingFileId, setRenamingFileId] = useState<string | null>(null);
   const [tempName, setTempName] = useState('');
@@ -47,12 +49,9 @@ const FileManager: React.FC<FileManagerProps> = ({
     }
   }, [newlyCreatedFileId, files, setNewlyCreatedFileId]);
 
-  const handleCreateFile = () => {
-    onCreateFile();
-  };
-
   const handleDeleteFile = (id: string) => {
     onFileDelete(id);
+    setOpenDropdown(null);
   };
 
   const handleApplyRename = (id: string) => {
@@ -67,7 +66,6 @@ const FileManager: React.FC<FileManagerProps> = ({
     setOpenDropdown(null);
   };
 
-  // Dynamically get the file icon from the LANGUAGES constant
   const getFileIcon = (name: string) => {
     const extension = name.split('.').pop()?.toLowerCase();
     const language = Object.values(LANGUAGES).find(lang => lang.extension === extension);
@@ -88,7 +86,7 @@ const FileManager: React.FC<FileManagerProps> = ({
       <div className="flex items-center justify-between p-2 border-b border-slate-800">
         <span className="text-slate-300 font-semibold text-sm">File Explorer</span>
         <button
-          onClick={handleCreateFile}
+          onClick={onCreateFile}
           className="px-2 py-1 bg-blue-500 rounded hover:bg-blue-600 text-white"
         >
           +
@@ -99,7 +97,11 @@ const FileManager: React.FC<FileManagerProps> = ({
         {files.map(file => (
           <div
             key={file.id}
-            className={`flex items-center justify-between p-1 rounded cursor-pointer group ${file.id === activeFileId ? 'bg-slate-700 text-white' : 'text-slate-300 hover:bg-slate-800'}`}
+            className={`flex items-center justify-between p-1 rounded cursor-pointer group ${
+              file.id === focusedFileId
+                ? 'bg-blue-900 text-white'
+                : 'text-slate-300 hover:bg-slate-800'
+            }`}
             onClick={() => onFileSelect(file.id)}
           >
             {renamingFileId === file.id ? (
@@ -113,34 +115,29 @@ const FileManager: React.FC<FileManagerProps> = ({
                     if (e.key === 'Enter') handleApplyRename(file.id);
                     if (e.key === 'Escape') handleCancelRename();
                   }}
+                  onClick={e => e.stopPropagation()}
                 />
                 <button
                   className="text-green-500 font-bold px-1"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleApplyRename(file.id);
-                  }}
+                  onClick={(e) => { e.stopPropagation(); handleApplyRename(file.id); }}
                 >
                   ✓
                 </button>
                 <button
                   className="text-red-500 font-bold px-1"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleCancelRename();
-                  }}
+                  onClick={(e) => { e.stopPropagation(); handleCancelRename(); }}
                 >
                   ✕
                 </button>
               </div>
             ) : (
               <div className="flex items-center justify-between w-full">
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-2 overflow-hidden">
                   {getFileIcon(file.name)}
                   <span className="truncate">{file.name}</span>
                 </div>
                 <button
-                  className="opacity-0 group-hover:opacity-100 hover:opacity-100 px-1 cursor-pointer"
+                  className="opacity-0 group-hover:opacity-100 focus:opacity-100 px-1 cursor-pointer flex-shrink-0"
                   onClick={(e) => {
                     e.stopPropagation();
                     const rect = (e.target as HTMLButtonElement).getBoundingClientRect();
@@ -157,36 +154,41 @@ const FileManager: React.FC<FileManagerProps> = ({
         ))}
       </div>
 
-      {openDropdown &&
-        createPortal(
-          <div
-            className="absolute w-28 bg-slate-800 rounded shadow-lg z-50"
-            style={{ top: openDropdown.y + window.scrollY, left: openDropdown.x + window.scrollX }}
-            onMouseLeave={() => setOpenDropdown(null)}
+      {openDropdown && createPortal(
+        <div
+          className="absolute w-40 bg-slate-800 rounded shadow-lg z-50 text-slate-200 text-sm"
+          style={{ top: openDropdown.y, left: openDropdown.x }}
+          onMouseLeave={() => setOpenDropdown(null)}
+        >
+          <button
+            className="w-full text-left px-3 py-2 hover:bg-slate-700 disabled:opacity-50 disabled:hover:bg-slate-800 disabled:cursor-not-allowed"
+            disabled={isSplitView}
+            onClick={() => {
+              onOpenFileToSide(openDropdown.id);
+              setOpenDropdown(null);
+            }}
           >
-            <button
-              className="w-full text-left px-2 py-1 text-sm hover:bg-slate-700"
-              onClick={(e) => {
-                e.stopPropagation();
-                setRenamingFileId(openDropdown.id);
-                setTempName(files.find(f => f.id === openDropdown.id)?.name || '');
-                setOpenDropdown(null);
-              }}
-            >
-              Rename
-            </button>
-            <button
-              className="w-full text-left px-2 py-1 text-sm text-red-500 hover:bg-slate-700"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleDeleteFile(openDropdown.id);
-              }}
-            >
-              Delete
-            </button>
-          </div>,
-          document.body
-        )}
+            Open to the Side
+          </button>
+          <button
+            className="w-full text-left px-3 py-2 hover:bg-slate-700"
+            onClick={() => {
+              setRenamingFileId(openDropdown.id);
+              setTempName(files.find(f => f.id === openDropdown.id)?.name || '');
+              setOpenDropdown(null);
+            }}
+          >
+            Rename
+          </button>
+          <button
+            className="w-full text-left px-3 py-2 text-red-400 hover:bg-slate-700"
+            onClick={() => handleDeleteFile(openDropdown.id)}
+          >
+            Delete
+          </button>
+        </div>,
+        document.body
+      )}
     </div>
   );
 };
