@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { FaFile } from 'react-icons/fa';
-import { LANGUAGES } from "@/components/lib/constants";
+import { LANGUAGES } from "@/components/libs/constants";
 
 interface FileItem {
   id: string;

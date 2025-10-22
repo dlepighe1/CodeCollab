@@ -1,4 +1,4 @@
-import { useToast } from "@/components/lib/use-toast"
+import { useToast } from "@/components/libs/use-toast"
 import {
   Toast,
   ToastClose,

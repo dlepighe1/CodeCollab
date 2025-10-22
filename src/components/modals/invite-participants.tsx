@@ -5,8 +5,8 @@ import { Copy, Check, Link } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useToast } from "@/components/lib/use-toast";
-import { MAX_PARTICIPANTS } from "../lib/constants";
+import { useToast } from "@/components/libs/use-toast";
+import { MAX_PARTICIPANTS } from "../libs/constants";
 
 interface InviteLinkModalProps {
   open: boolean;

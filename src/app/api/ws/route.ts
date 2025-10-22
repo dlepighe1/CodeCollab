@@ -1,7 +1,7 @@
 export const runtime = 'edge';
 
-import { getRoom, attachClient, detachClient, colorForIdx } from '@/components/lib/room';
-import type { ClientToServer, ServerToClient, Peer } from '@/components/lib/wsTypes';
+import { getRoom, attachClient, detachClient, colorForIdx } from '@/components/libs/room';
+import type { ClientToServer, ServerToClient, Peer } from '@/components/libs/wsTypes';
 
 type ServerWebSocket = WebSocket & { accept(): void }; // <- add accept()
 

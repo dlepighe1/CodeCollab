@@ -1,40 +1,49 @@
-// components/editor/participantList.tsx
-
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Users, Crown, Eye, UserX } from "lucide-react";
-import { AiOutlineUserAdd } from 'react-icons/ai'
+import { AiOutlineUserAdd } from 'react-icons/ai';
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import InviteLinkModal from "../modals/invite-participants";
-import { MAX_PARTICIPANTS } from "../lib/constants";
-import { useToast } from "@/components/lib/use-toast";
+import { MAX_PARTICIPANTS } from "../libs/constants";
+import { useToast } from "@/components/libs/use-toast";
 
 interface User {
-  id: string;
+  id: string;        // socket.id for self; nickname for others if id is unknown
   nickname: string;
   color: string;
 }
 
 interface ParticipantListProps {
   users: User[];
-  currentUserId: string;
+  currentUserId: string;         // socket.id of current user
+  adminNickname: string;         // admin is identified by nickname from server
   onInviteClick: () => void;
   sessionId: string;
-  onAddUser: () => void; // For demonstration
-  onRemoveUser: () => void; // For demonstration
-  onKick: (userId: string) => void; // Add new prop for kicking users
+  onAddUser: () => void;
+  onRemoveUser: () => void;
+  onKick: (userId: string) => void;
 }
 
-const ParticipantList = ({ users, currentUserId, onInviteClick, sessionId, onAddUser, onRemoveUser, onKick }: ParticipantListProps) => {
-  const participants = users.filter(user => user.id !== currentUserId);
-  const currentUser = users.find(user => user.id === currentUserId);
-  const isAdmin = currentUserId === '1'; // First user is admin
+const ParticipantList = ({
+  users,
+  currentUserId,
+  adminNickname,
+  onInviteClick,
+  sessionId,
+  onAddUser,
+  onRemoveUser,
+  onKick
+}: ParticipantListProps) => {
   const { toast } = useToast();
+
+  const currentUser = useMemo(() => users.find(u => u.id === currentUserId), [users, currentUserId]);
+  const participants = useMemo(() => users.filter(u => u.id !== currentUserId), [users, currentUserId]);
+  const isAdmin = currentUser?.nickname === adminNickname;
   const maxParticipantsReached = users.length >= MAX_PARTICIPANTS;
 
-  const [showInviteLinkModal, setShowInviteLinkModal] = useState(false)
+  const [showInviteLinkModal, setShowInviteLinkModal] = useState(false);
 
   const handleInviteClick = () => {
     if (maxParticipantsReached) {
@@ -51,7 +60,7 @@ const ParticipantList = ({ users, currentUserId, onInviteClick, sessionId, onAdd
   const handleKickClick = (user: User) => {
     onKick(user.id);
     toast({
-      title: "Participant Kicked",
+      title: "Participant Removed",
       description: `${user.nickname} has been removed from the session.`,
       variant: "destructive",
     });
@@ -68,11 +77,15 @@ const ParticipantList = ({ users, currentUserId, onInviteClick, sessionId, onAdd
     <div className="flex items-center space-x-2">
       <Dialog>
         <DialogTrigger asChild>
-          <Button variant="ghost" size="sm" className="flex items-center space-x-1 text-slate-300 hover:text-white hover:bg-slate-800/60 backdrop-blur-sm rounded-full border-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="flex items-center space-x-1 text-slate-300 hover:text-white hover:bg-slate-800/60 backdrop-blur-sm rounded-full border-2"
+          >
             <div className="flex -space-x-2">
-              {users.slice(1, users.length).map((user) => (
+              {participants.map((user) => (
                 <Avatar key={user.id} className="w-6 h-6 border-2 border-slate-700">
-                  <AvatarFallback 
+                  <AvatarFallback
                     className="text-xs text-white"
                     style={{ backgroundColor: user.color }}
                   >
@@ -83,7 +96,7 @@ const ParticipantList = ({ users, currentUserId, onInviteClick, sessionId, onAdd
             </div>
           </Button>
         </DialogTrigger>
-        
+
         <DialogContent className="bg-slate-900/95 backdrop-blur-xl border-slate-700 text-white max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center">
@@ -91,12 +104,12 @@ const ParticipantList = ({ users, currentUserId, onInviteClick, sessionId, onAdd
               Participants
             </DialogTitle>
           </DialogHeader>
-          
+
           <div className="space-y-3">
             {currentUser && (
               <div className="flex items-center space-x-3 p-3 rounded-lg bg-slate-800/50">
                 <Avatar className="w-8 h-8">
-                  <AvatarFallback 
+                  <AvatarFallback
                     className="text-white"
                     style={{ backgroundColor: currentUser.color }}
                   >
@@ -112,36 +125,44 @@ const ParticipantList = ({ users, currentUserId, onInviteClick, sessionId, onAdd
                 </div>
               </div>
             )}
-            
-            {participants.map((user) => (
-              <div key={user.id} className="flex items-center justify-between space-x-3 p-3 rounded-lg hover:bg-slate-800/30">
-                <div className="flex items-center space-x-3">
-                  <Avatar className="w-8 h-8">
-                    <AvatarFallback 
-                      className="text-white"
-                      style={{ backgroundColor: user.color }}
-                    >
-                      {user.nickname.charAt(0).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex items-center space-x-2">
-                    <p className="text-white font-medium">{user.nickname}</p>
-                    {user.id === '1' && <Crown className="w-4 h-4 text-yellow-500" />}
+
+            {participants.map((user) => {
+              const isUserAdmin = user.nickname === adminNickname;
+              return (
+                <div key={user.id} className="flex items-center justify-between space-x-3 p-3 rounded-lg hover:bg-slate-800/30">
+                  <div className="flex items-center space-x-3">
+                    <Avatar className="w-8 h-8">
+                      <AvatarFallback
+                        className="text-white"
+                        style={{ backgroundColor: user.color }}
+                      >
+                        {user.nickname.charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex items-center space-x-2">
+                      <p className="text-white font-medium">{user.nickname}</p>
+                      {isUserAdmin && <Crown className="w-4 h-4 text-yellow-500" />}
+                    </div>
+                  </div>
+
+                  <div className="flex space-x-2">
+                    <Button variant="ghost" size="sm" className="rounded-full text-slate-400 hover:text-black" onClick={() => handleFollowClick(user)}>
+                      <Eye className="w-4 h-4" /> Follow
+                    </Button>
+                    {isAdmin && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="rounded-full text-slate-400 hover:text-red-500"
+                        onClick={() => handleKickClick(user)}
+                      >
+                        <UserX className="w-4 h-4" /> Kick
+                      </Button>
+                    )}
                   </div>
                 </div>
-                
-                <div className="flex space-x-2">
-                  <Button variant="ghost" size="sm" className="rounded-full text-slate-400 hover:text-black" onClick={() => handleFollowClick(user)}>
-                    <Eye className="w-4 h-4" /> Follow
-                  </Button>
-                  {isAdmin && (
-                    <Button variant="ghost" size="sm" className="rounded-full text-slate-400 hover:text-red-500" onClick={() => handleKickClick(user)}>
-                      <UserX className="w-4 h-4" /> kick
-                    </Button>
-                  )}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </DialogContent>
       </Dialog>
@@ -155,7 +176,7 @@ const ParticipantList = ({ users, currentUserId, onInviteClick, sessionId, onAdd
         <AiOutlineUserAdd className="w-4 h-4" />
       </Button>
 
-      <InviteLinkModal 
+      <InviteLinkModal
         open={showInviteLinkModal}
         onOpenChange={setShowInviteLinkModal}
         sessionId={sessionId}
